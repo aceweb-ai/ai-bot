@@ -21,6 +21,8 @@
     </div>
 </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
    <script>
     // ===== КОНФИГУРАЦИЯ =====
     // ВАЖНО: Замените 'YOUR_VERCEL_API_URL' на реальный URL вашего бэкенда на Vercel
@@ -58,7 +60,10 @@
     // 3. Создаем визуальный элемент сообщения
     const messageElement = document.createElement('div');
     messageElement.className = `${sender}-message message`;
-    messageElement.textContent = text;
+    // Безопасный рендеринг Markdown в HTML
+    messageElement.innerHTML = DOMPurify 
+    ? DOMPurify.sanitize(marked.parse(text))  // Если подключен DOMPurify
+    : marked.parse(text);                     // Без дополнительной очистки
     
     // 4. Добавляем в чат (перед индикатором печати, если он есть)
     messageArea.insertBefore(messageElement, typingIndicator);
