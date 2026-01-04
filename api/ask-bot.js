@@ -75,6 +75,17 @@ messages.push({
     "content": question
 });
 
+// ===== НАЧИНАЕТСЯ НОВЫЙ ДОБАВЛЕННЫЙ БЛОК =====
+// Защита от слишком длинного контекста
+const MAX_HISTORY_LENGTH = 20;
+
+if (messages.length > MAX_HISTORY_LENGTH) {
+    const systemMessage = messages[0];
+    messages = [systemMessage, ...messages.slice(-MAX_HISTORY_LENGTH + 1)];
+    console.log(`Context truncated to ${messages.length} messages.`);
+}
+// ===== ЗАКАНЧИВАЕТСЯ НОВЫЙ ДОБАВЛЕННЫЙ БЛОК =====
+            
 try {
     // 5. Отправляем запрос в Chutes API с полной историей контекста
     const chutesResponse = await fetch(CHUTES_API_URL, {
