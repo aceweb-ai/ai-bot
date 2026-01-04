@@ -34,14 +34,71 @@ export default async function handler(req, res) {
             
             console.log('Question received:', question);
             
-            // Фиктивный ответ (позже замените на вызов Chutes)
-            const mockAnswer = `[Ответ от Vercel] Я получил ваш вопрос: "${question}". Теперь JSON парсится корректно!`;
-            
-            return res.status(200).json({
-                answer: mockAnswer,
-                receivedQuestion: question,
-                debug: 'Backend is working'
-            });
+// ===== НАЧАЛО БЛОКА ДЛЯ ЗАМЕНЫ =====
+console.log('Sending request to Chutes LLM API...');
+
+// 1. Получаем API-токен из переменных окружения Vercel
+const CHUTES_API_TOKEN = process.env.CHUTES_API_TOKEN;
+const CHUTES_API_URL = "https://llm.chutes.ai/v1/chat/completions";
+
+// 2. Формируем промпт (system message задает роль бота)
+const messages = [
+    {
+        "role": "system",
+        "content": "Ты - полезный, вежливый и профессиональный AI-ассистент компании. Отвечай на вопросы клиентов кратко, по делу и дружелюбно. Если не знаешь ответа, вежливо предложи обратиться к менеджеру."
+    },
+    {
+        "role": "user",
+        "content": question // Вопрос от посетителя сайта
+    }
+];
+
+try {
+    const chutesResponse = await fetch(CHUTES_API_URL, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${CHUTES_API_TOKEN}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            "model": "NousResearch/Hermes-4-14B", // Вы можете сменить модель
+            "messages": messages,
+            "stream": false, // Для начала используем false, чтобы получить сразу весь ответ
+            "max_tokens": 500,  // Ограничим длину ответа для экономии токенов
+            "temperature": 0.7
+        })
+    });
+
+    if (!chutesResponse.ok) {
+        const errorText = await chutesResponse.text();
+        console.error(`Chutes API error (${chutesResponse.status}):`, errorText);
+        throw new Error(`Ошибка AI-сервиса: ${chutesResponse.status}`);
+    }
+
+    const chutesData = await chutesResponse.json();
+    console.log('Chutes API response received.');
+
+    // 3. Извлекаем текст ответа из структуры API (стандартный формат OpenAI)
+    // Ответ содержится в chutesData.choices[0].message.content
+    const aiAnswer = chutesData.choices?.[0]?.message?.content || "Не удалось получить ответ от AI.";
+
+    // 4. Возвращаем ответ на фронтенд
+    return res.status(200).json({
+        answer: aiAnswer,
+        receivedQuestion: question,
+        source: 'chutes-llm-api'
+    });
+
+} catch (chutesError) {
+    console.error('Error calling Chutes LLM API:', chutesError);
+    // Fallback-ответ
+    return res.status(200).json({
+        answer: `Извините, в данный момент я не могу обработать ваш вопрос. Пожалуйста, свяжитесь с нами напрямую. (Ваш вопрос: "${question}")`,
+        receivedQuestion: question,
+        error: true
+    });
+}
+// ===== КОНЕЦ БЛОКА ДЛЯ ЗАМЕНЫ =====
             
         } catch (error) {
             console.error('Unexpected error in POST handler:', error);
