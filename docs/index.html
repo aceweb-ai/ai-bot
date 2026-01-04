@@ -28,7 +28,7 @@
     
     // ===== СОСТОЯНИЕ ЧАТА =====
     let conversationHistory = []; // Хранит историю диалога для контекста
-    
+    const MAX_CONTEXT_MESSAGES = 20; // Максимальное количество сообщений в истории
     // ===== ПОЛУЧЕНИЕ ЭЛЕМЕНТОВ DOM =====
     const messageArea = document.getElementById('message-area');
     const userInput = document.getElementById('user-input');
@@ -43,22 +43,28 @@
     
     // Функция добавления сообщения в историю и на экран
     function addMessage(text, sender) {
-        // 1. Добавляем в массив истории
-        conversationHistory.push({
-            role: sender === 'user' ? 'user' : 'assistant',
-            content: text
-        });
-        
-        // 2. Создаем визуальный элемент сообщения
-        const messageElement = document.createElement('div');
-        messageElement.className = `${sender}-message message`;
-        messageElement.textContent = text;
-        
-        // 3. Добавляем в чат (перед индикатором печати, если он есть)
-        messageArea.insertBefore(messageElement, typingIndicator);
-        
-        // 4. Прокручиваем вниз к новому сообщению
-        messageArea.scrollTop = messageArea.scrollHeight;
+    // 1. Добавляем в массив истории
+    conversationHistory.push({
+        role: sender === 'user' ? 'user' : 'assistant',
+        content: text
+    });
+    
+    // 2. Ограничиваем длину истории, чтобы не отправлять слишком много
+    if (conversationHistory.length > MAX_CONTEXT_MESSAGES) {
+        // Оставляем system-сообщение (если оно есть) и последние MAX_CONTEXT_MESSAGES-1 сообщений
+        conversationHistory = conversationHistory.slice(-MAX_CONTEXT_MESSAGES);
+    }
+    
+    // 3. Создаем визуальный элемент сообщения
+    const messageElement = document.createElement('div');
+    messageElement.className = `${sender}-message message`;
+    messageElement.textContent = text;
+    
+    // 4. Добавляем в чат (перед индикатором печати, если он есть)
+    messageArea.insertBefore(messageElement, typingIndicator);
+    
+    // 5. Прокручиваем вниз к новому сообщению
+    messageArea.scrollTop = messageArea.scrollHeight;
     }
     
     // Показать/скрыть индикатор "Бот печатает"
@@ -90,16 +96,16 @@
         try {
             // 4. Отправляем запрос на наш бэкенд Vercel
             const response = await fetch(BACKEND_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    question: question,
-                    // Отправляем последние 4 сообщения для контекста
-                    history: conversationHistory.slice(-4)
-                })
-            });
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            question: question,
+            // Отправляем ВСЮ историю, кроме самого последнего сообщения (оно будет текущим вопросом)
+            history: conversationHistory.slice(0, -1)
+        })
+    });
             
             // 5. Прячем индикатор печати
             hideTypingIndicator();
