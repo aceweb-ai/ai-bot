@@ -77,7 +77,7 @@ messages.push({
 
 // ===== ЗАЩИТА ОТ СЛИШКОМ ДЛИННОГО КОНТЕКСТА =====
 // Оптимальное значение для большинства моделей
-const MAX_CONTEXT_MESSAGES = 20; // Уменьшено с 20 для безопасности
+const MAX_CONTEXT_MESSAGES = 12; // Уменьшено с 20 для безопасности
 
 // Обрезаем только если сообщений слишком много
 if (messages.length > MAX_CONTEXT_MESSAGES) {
@@ -107,7 +107,7 @@ try {
             "model": "NousResearch/Hermes-4-14B",
             "messages": messages, // Теперь messages содержит system + история + текущий вопрос
             "stream": false,
-            "max_tokens": 500,
+            "max_tokens": 800,
             "temperature": 0.7
         })
     });
